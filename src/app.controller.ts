@@ -1,6 +1,7 @@
 /* eslint-disable prefer-const */
-import { CosmosClient } from '@azure/cosmos';
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
+import { Body } from '@nestjs/common/decorators';
+import { v4 as uuidv4 } from 'uuid';
 import { AppService } from './app.service';
 import { DbContext } from './db/db-context';
 import { IUser } from './user';
@@ -17,7 +18,7 @@ export class AppController {
   }
 
   @Get('users')
-  async getUser(): Promise<IUser[]> {    
+  async getUser(): Promise<IUser[]> {
     const resp = await this.dbContext
       .database
       .container('User')
@@ -34,5 +35,24 @@ export class AppController {
     });
 
     return result;
+  }
+
+  @Post('users')
+  async createUser(@Body() user: IUser): Promise<number> {
+    try {
+      const x = await this.dbContext
+        .database
+        .container('User')
+        .items.create({
+          id: uuidv4(),
+          name: user.name,
+          username: user.username,
+          email: user.email,
+        });
+      return 0;
+    } catch (err) {
+      console.error(err);
+      return 1;
+    }
   }
 }
