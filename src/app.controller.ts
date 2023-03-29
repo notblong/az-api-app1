@@ -1,15 +1,19 @@
 /* eslint-disable prefer-const */
-import { Controller, Get, Post } from '@nestjs/common';
-import { Body } from '@nestjs/common/decorators';
+import { Controller, Get, Header, Post, Res } from '@nestjs/common';
+import { Body, Query } from '@nestjs/common/decorators';
 import { v4 as uuidv4 } from 'uuid';
 import { AppService } from './app.service';
+import { BlobContext } from './blob/blob-context';
 import { DbContext } from './db/db-context';
+import { DocumentService } from './document/document.service';
 import { IUser } from './user';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly dbContext: DbContext,
+    private readonly blobContext: BlobContext,
+    private readonly documentService: DocumentService,
     private readonly appService: AppService) {}
 
   @Get()
@@ -40,7 +44,7 @@ export class AppController {
   @Post('users')
   async createUser(@Body() user: IUser): Promise<number> {
     try {
-      const x = await this.dbContext
+      await this.dbContext
         .database
         .container('User')
         .items.create({
@@ -53,6 +57,33 @@ export class AppController {
     } catch (err) {
       console.error(err);
       return 1;
+    }
+  }
+
+  @Get('docs')
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  async getDoc(
+    @Res() res,
+    @Query('uuid') uuid: string) {
+    if (uuid == null || uuid === '') {
+      return;
+    }
+
+    const documentContainer = this.blobContext.connect('document');
+    try {
+      const blobClient = documentContainer.getBlobClient(`${uuid}.docx`);
+      const doc = await blobClient.download();
+      console.log(`download of test document ${uuid} success`);
+
+      return doc.readableStreamBody.pipe(res);
+    } catch (e) {
+      // call func to generate document
+      console.log(`not found ${uuid}, generating document by azure function...`);
+      this.documentService.triggerHttpGenerateUserDocument({ uuid: uuid });
+      console.log(`not found ${uuid}, generating document by send msg...`);
+      this.documentService.sendMsg(uuid);
+      console.log('closing request... 0');
+      return;
     }
   }
 }

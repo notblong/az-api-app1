@@ -7,6 +7,7 @@ export class DbContext {
 
   constructor() {
     if (!this.database) {
+      console.log('DbContext Initialization');
       this.database = this.connect();
     }
   }
