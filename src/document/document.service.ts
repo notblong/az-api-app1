@@ -5,7 +5,7 @@ import { ServiceBus } from 'src/queue/service-bus';
 @Injectable()
 export class DocumentService {
   constructor(
-    private readonly serviceBusClient: ServiceBus,
+    private readonly serviceBus: ServiceBus,
     private readonly httpService: HttpService) {}
   
   
@@ -30,7 +30,7 @@ export class DocumentService {
    */
   async sendMsg(uuid: string) {
     const msg = { body: { uuid } };
-    const sender = this.serviceBusClient.documentSender;
+    const sender = this.serviceBus.documentSender;
     let batch = await sender.createMessageBatch();
     if (!batch.tryAddMessage(msg)) {
       console.log(`[FAIL] Could not send a batch of messages to the queue: ${process.env.SERVICE_BUS_QUEUE_NAME}`);

@@ -11,6 +11,6 @@ import { ServiceBus } from './queue/service-bus';
 @Module({
   imports: [ConfigModule.forRoot(), HttpModule],
   controllers: [AppController],
-  providers: [AppService, DbContext, BlobContext, DocumentService, ServiceBus],
+  providers: [AppService, DocumentService, DbContext, BlobContext, ServiceBus],
 })
 export class AppModule {}
