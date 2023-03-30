@@ -1,4 +1,3 @@
-import { ServiceBusMessage } from '@azure/service-bus';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ServiceBus } from 'src/queue/service-bus';
@@ -30,12 +29,11 @@ export class DocumentService {
    * @returns 
    */
   async sendMsg(uuid: string) {
-    const msg = { body: uuid };
+    const msg = { body: { uuid } };
     const sender = this.serviceBusClient.documentSender;
     let batch = await sender.createMessageBatch();
     if (!batch.tryAddMessage(msg)) {
       console.log(`[FAIL] Could not send a batch of messages to the queue: ${process.env.SERVICE_BUS_QUEUE_NAME}`);
-
       return;
     }
 

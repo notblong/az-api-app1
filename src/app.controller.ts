@@ -78,8 +78,8 @@ export class AppController {
       return doc.readableStreamBody.pipe(res);
     } catch (e) {
       // call func to generate document
-      console.log(`not found ${uuid}, generating document by azure function...`);
-      this.documentService.triggerHttpGenerateUserDocument({ uuid: uuid });
+      // console.log(`not found ${uuid}, generating document by azure function...`);
+      // this.documentService.triggerHttpGenerateUserDocument({ uuid: uuid });
       console.log(`not found ${uuid}, generating document by send msg...`);
       this.documentService.sendMsg(uuid);
       console.log('closing request... 0');

@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BlobContext } from './blob/blob-context';
 import { DbContext } from './db/db-context';
+import { DocumentService } from './document/document.service';
+import { ServiceBus } from './queue/service-bus';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -14,7 +16,7 @@ describe('AppController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService, DbContext, BlobContext],
+      providers: [AppService, DbContext, BlobContext, DocumentService, ServiceBus],
     }).compile();
 
     appController = app.get<AppController>(AppController);
