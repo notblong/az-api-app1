@@ -1,11 +1,13 @@
 /* eslint-disable prefer-const */
-import { Controller, Get, Header, Post, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
 import { Body, Query } from '@nestjs/common/decorators';
+import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AppService } from './app.service';
 import { BlobContext } from './blob/blob-context';
 import { DbContext } from './db/db-context';
 import { DocumentService } from './document/document.service';
+import { INotification, NotificationStatus } from './notification';
 import { IUser } from './user';
 
 @Controller()
@@ -60,11 +62,30 @@ export class AppController {
     }
   }
 
+  @Get('docs/check')
+  async checkDoc(@Query('uuid') uuid: string): Promise<INotification> {
+    if (uuid == null || uuid === '') {
+      return;
+    }
+
+    const documentContainer = this.blobContext.connect('document');
+    try {
+      const blobClient = documentContainer.getBlobClient(`${uuid}.docx`);
+      // way of checking blob exist.
+      // (c#) http://blog.smarx.com/posts/testing-existence-of-a-windows-azure-blob
+      await blobClient.getProperties();
+    } catch (e) {
+      // not found
+      return ({ status: NotificationStatus.notStart, type: 'document', uuid: uuid });
+    }
+
+    return ({ status: NotificationStatus.done, type: 'document', uuid: uuid });
+  }
+
   @Get('docs')
-  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
   async getDoc(
-    @Res() res,
-    @Query('uuid') uuid: string) {
+    @Res() res: Response,
+    @Query('uuid') uuid: string): Promise<any> {
     if (uuid == null || uuid === '') {
       return;
     }
@@ -74,16 +95,20 @@ export class AppController {
       const blobClient = documentContainer.getBlobClient(`${uuid}.docx`);
       const doc = await blobClient.download();
       console.log(`download of test document ${uuid} success`);
-
       return doc.readableStreamBody.pipe(res);
     } catch (e) {
-      // call func to generate document
-      // console.log(`not found ${uuid}, generating document by azure function...`);
-      // this.documentService.triggerHttpGenerateUserDocument({ uuid: uuid });
-      console.log(`not found ${uuid}, generating document by send msg...`);
-      this.documentService.sendMsg(uuid);
-      console.log('closing request... 0');
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR);
       return;
     }
+  }
+
+  @Get('docs/generate')
+  async generateDoc(@Query('uuid') uuid: string): Promise<INotification> {
+    if (uuid == null || uuid === '') {
+      return;
+    }
+
+    this.documentService.sendMsg(uuid);
+    return ({ status: NotificationStatus.processing, type: 'document', uuid: uuid });
   }
 }
